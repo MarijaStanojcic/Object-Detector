@@ -1,0 +1,108 @@
+Object Detector  
+========================================================
+author: Marija Staojcic
+date: 18-May-2019
+autosize: true
+
+R Ladies Mini Hackathon
+========================================================
+
+
+- Used Object Detector model from IBM to detect object in the picture
+(https://developer.ibm.com/exchanges/models/all/max-object-detector/)
+
+- The picture that I used was "baby-bear" picture
+
+
+Image
+===============
+
+```{r, echo=FALSE}
+
+# Load libraries
+library(jpeg)
+library(httr)
+library(dplyr)
+library(ggplot2)
+
+# Visualize the image
+jj <- jpeg::readJPEG("baby-bear.jpeg",native=TRUE)
+plot(0:1,0:1,type="n",ann=FALSE,axes=FALSE)
+rasterImage(jj,0,0,1,1)
+```
+
+
+Code
+========================================================
+```{r}
+model_endpoint_object_detector <- paste0('http://max-object-detector.max.us-south.containers.appdomain.cloud/', 'model/predict')
+
+image <- upload_file("baby-bear.jpeg")
+# POST
+response_object <- httr::POST(model_endpoint_object_detector,
+                       body = list(
+                         image = upload_file("baby-bear.jpeg",
+                                             type = "image/jpeg")
+                       ), encode = c("multipart")
+) %>% content()
+```
+
+
+Getting the predictions
+========================================================
+```{r}
+my_data <- data.frame(LabelID = character(), label = character(), probability = numeric(), stringsAsFactors = FALSE)
+det_box <- data.frame()
+row <- character()
+det_box_row <- vector()
+
+```
+
+Getting the predictions
+========================================================
+
+```{r}
+for (i in 1:length(response_object$predictions)){
+  row <- cbind(response_object$predictions[[i]]$label_id, response_object$predictions[[i]]$label, response_object$predictions[[i]]$probability)
+  my_data <- rbind(row, my_data)
+  det_box_row <- rbind(
+    t(matrix(unlist(response_object$predictions[[i]]$detection_box), 
+             nrow=4)))
+  det_box <- rbind(det_box_row, det_box)
+}
+```
+
+
+
+Getting the predictions ...
+========================================================
+
+```{r}
+colnames(my_data) <- c("LabelID", "Label", "Probability")
+my_data %>% arrange(desc(Probability)) -> my_data
+
+my_data
+```
+
+
+What did it ditect?
+========================================================
+```{r, echo = FALSE}
+n <- nrow(my_data)
+for ( i in 1:n){
+  cat(paste0("The object ", i, " is ", my_data$Label[i],".", "\n"))
+
+}
+```
+
+
+What next?
+========================================================
+
+-Adding boxes around objects
+
+-Making Shiny APP
+
+The end... 
+========================================================
+... for now
