@@ -9,9 +9,7 @@ library(grDevices)
 library(magick)
 library(httr)
 library(plotrix)
-library(ggplot2)
-library(gridExtra)
-
+library(shinyBS)
 
 
 ui <- fluidPage(
@@ -27,16 +25,16 @@ ui <- fluidPage(
                             p("Lowering the threshold includes objects the model is less certain about."),
                             hr(),
                             tags$b("Labels found"),
-                            uiOutput("plots"))),
+                            uiOutput("images"))),
            # Probability threshold for including a detected object in the response in the range [0, 1] (default: 0.7). Lowering the threshold includes objects the model is less certain about.
            column(width = 9,
                   imageOutput("img")
-                  ))
+           ))
   
-#  fluidRow(column(width = 1),
-#           column(width = 11, 
-#                  imageOutput("img")))
-#  
+  #  fluidRow(column(width = 1),
+  #           column(width = 11, 
+  #                  imageOutput("img")))
+  #  
   
 )
 
@@ -151,52 +149,57 @@ server <- function(input, output, session) {
     # Return a list
     list(src = tmpfile, contentType = "image/jpeg")
   })
-  
-  
-  
-  
-  
-  output$plots <- renderUI({
-    req(input$upload)
+
     
-    label_id <- unique(data_table()[[1]]$Label_ID) 
-    unique_n <- length(label_id)
-    labels <- unique(data_table()[[1]]$Label)
     
-    get_plot_output_list<- function(){ 
-      plot_output_list <- lapply(1:unique_n, 
-                                 function(i){
-                                   my_i_new <- label_id[i]
-                                   imagename <- image_read(paste0("https://raw.githubusercontent.com/IBM/MAX-Object-Detector-Web-App/master/static/img/cocoicons/", my_i_new, ".jpg"))
-                                   
-                                   #plotname <- paste0("plot", i, sep = "")
-                                                         
-                                   image_output_object <- renderImage({
-                                     # Writing an iimage
-                                     tmpfile <- imagename %>%
-                                       image_resize("80x80") %>% 
-                                       image_write(tempfile(fileext='jpg'), format = 'jpg', comment = labels[i])
-                                   
-                                   
-                                     
-                                     # Return a list
-                                     list(src = tmpfile, contentType = "image/jpg", width = 80, height = 80)  
-                                   })
-                                   
-                                   #   plot_output_object <- renderPlot({
-                                   #   plot(imagename)
-                                   
-                                 })
-      
-      
-      do.call(tagList,plot_output_list)
-      return(plot_output_list)
+  output$images <- renderUI({
+    
+    labels_id <- unique(data_table()[[1]]$Label_ID) 
+    #unique_n <- length(labels_id)
+    labels <- unique(data_table()[[1]]$Label)  
+    
+    for (i in labels_id){
+      local({
+        my_i <- i
+        image_name <- paste("my_image", my_i, sep = "")
+        imagename <- image_read(paste0("https://raw.githubusercontent.com/IBM/MAX-Object-Detector-Web-App/master/static/img/cocoicons/", my_i, ".jpg"))
+        
+        
+        output[[image_name]] <- renderImage({
+          # Writing an iimage
+          tmpfile <- imagename %>%
+            image_resize("80x80") %>% 
+            image_write(tempfile(fileext='jpg'), format = 'jpg')
+          
+          
+          
+          # Return a list
+          list(src = tmpfile, contentType = "image/jpg", width = 80, height = 80)  
+        })
+        
+#        bsTooltip(image_name, title ="M")
+#        addTooltip(session, image_name, paste0(labels[i]))
+        
+      })
     }
     
-    get_plot_output_list()
+    
+    image_output_list <- lapply(labels_id, function(i){
+      
+      image_name <- paste("my_image", i, sep ="")
+      
+      imageOutput(image_name, inline = TRUE)
+
+    })
+    
+    do.call(tagList,image_output_list)
+    
+  
     
   })
   
+  
+
 }
 
 shinyApp(ui, server)
