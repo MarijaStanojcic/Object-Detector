@@ -17,26 +17,26 @@ library(gridExtra)
 ui <- fluidPage(
   titlePanel("Object Detector"),
   
-  fluidRow(column(width = 4, 
+  fluidRow(column(width = 3, 
                   wellPanel(fileInput("upload", "Upload new image", accept = c('image/png', 'image/jpeg')), 
                             hr(),
-                            textInput("size", "Image size (width x height):", value = "500x500"),
+                            textInput("size", "Image size (width x height)", value = "500x500"),
                             p("Aspect ratio from the original picture will be kept the same."), 
                             hr(),
-                            sliderInput("threshold", "Probability threshold:", min = 0, max = 1, value = 0.7),
-                            p("Lowering the threshold includes objects the model is less certain about."))),
-           
-           # Probability threshold for including a detected object in the response in the range [0, 1] (default: 0.7). Lowering the threshold includes objects the model is less certain about.
-           column(width = 8,
-                  wellPanel(h4("Labels found"),
+                            sliderInput("threshold", "Probability threshold", min = 0, max = 1, value = 0.7),
+                            p("Lowering the threshold includes objects the model is less certain about."),
                             hr(),
-                            uiOutput("plots", inline = TRUE))
-                  )),
+                            tags$b("Labels found"),
+                            uiOutput("plots"))),
+           # Probability threshold for including a detected object in the response in the range [0, 1] (default: 0.7). Lowering the threshold includes objects the model is less certain about.
+           column(width = 9,
+                  imageOutput("img")
+                  ))
   
-  fluidRow(column(width = 1),
-           column(width = 11, 
-                  imageOutput("img")))
-  
+#  fluidRow(column(width = 1),
+#           column(width = 11, 
+#                  imageOutput("img")))
+#  
   
 )
 
@@ -166,17 +166,18 @@ server <- function(input, output, session) {
     get_plot_output_list<- function(){ 
       plot_output_list <- lapply(1:unique_n, 
                                  function(i){
-                                   my_i_new <- label_id[i] 
+                                   my_i_new <- label_id[i]
                                    imagename <- image_read(paste0("https://raw.githubusercontent.com/IBM/MAX-Object-Detector-Web-App/master/static/img/cocoicons/", my_i_new, ".jpg"))
                                    
                                    #plotname <- paste0("plot", i, sep = "")
-                                                          
+                                                         
                                    image_output_object <- renderImage({
                                      # Writing an iimage
                                      tmpfile <- imagename %>%
-                                       image_resize("80x80") %>%
+                                       image_resize("80x80") %>% 
                                        image_write(tempfile(fileext='jpg'), format = 'jpg', comment = labels[i])
-                                     
+                                   
+                                   
                                      
                                      # Return a list
                                      list(src = tmpfile, contentType = "image/jpg", width = 80, height = 80)  
